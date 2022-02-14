@@ -1,49 +1,53 @@
 @import 'variable';
 @import 'animation';
-:root {
-  --app-container: #f3f6fd;
-  --app-content-container: rgba(243, 246, 253, 0.6);
-  --main-color: #1f1c2e;
-  --secondary-color: #4a4a4a;
-  --link-color: #1f1c2e;
-  --link-color-hover: #c3cff4;
-  --link-color-active: #fff;
-  --link-color-active-bg: #1f1c2e;
-  --projects-section: #fff;
-  --message-box-hover: #fafcff;
-  --message-box-border: #e9ebf0;
-  --more-list-bg: #fff;
-  --more-list-bg-hover: #f6fbff;
-  --more-list-shadow: rgba(209, 209, 209, 0.4);
-  --button-bg: #1f1c24;
-  --search-area-bg: #fff;
-  --star: #1ff1c2e;
-  --message-btn: #fff;
-  --active-color: #3512e0;
-  --border-color: rgba(0, 0, 0, 0.1);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-container: #000;
+    --app-content-container: rgba(40, 40, 40, 1);
+    --main-color: #fff;
+    --secondary-color: rgba(255, 255, 255, 0.8);
+    --projects-section: #1f2937;
+    --link-color: rgba(255, 255, 255, 0.8);
+    --link-color-hover: rgba(195, 207, 244, 0.1);
+    --link-color-active-bg: rgba(195, 207, 244, 0.2);
+    --button-bg: #1f2937;
+    --search-area-bg: #1f2937;
+    --message-box-hover: #243244;
+    --message-box-border: rgba(255, 255, 255, 0.1);
+    --star: #ffd92c;
+    --light-font: rgba(255, 255, 255, 0.8);
+    --more-list-bg: #2f3142;
+    --more-list-bg-hover: rgba(195, 207, 244, 0.1);
+    --more-list-shadow: rgba(195, 207, 244, 0.1);
+    --message-btn: rgba(195, 207, 244, 0.1);
+    --active-color: #3512e0;
+    --border-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
-.dark:root {
-  --app-container: #000;
-  --app-content-container: rgba(40, 40, 40, 1);
-  --main-color: #fff;
-  --secondary-color: rgba(255, 255, 255, 0.8);
-  --projects-section: #1f2937;
-  --link-color: rgba(255, 255, 255, 0.8);
-  --link-color-hover: rgba(195, 207, 244, 0.1);
-  --link-color-active-bg: rgba(195, 207, 244, 0.2);
-  --button-bg: #1f2937;
-  --search-area-bg: #1f2937;
-  --message-box-hover: #243244;
-  --message-box-border: rgba(255, 255, 255, 0.1);
-  --star: #ffd92c;
-  --light-font: rgba(255, 255, 255, 0.8);
-  --more-list-bg: #2f3142;
-  --more-list-bg-hover: rgba(195, 207, 244, 0.1);
-  --more-list-shadow: rgba(195, 207, 244, 0.1);
-  --message-btn: rgba(195, 207, 244, 0.1);
-  --active-color: #3512e0;
-  --border-color: rgba(255, 255, 255, 0.1);
+@media (prefers-color-scheme: light) {
+  :root {
+    --app-container: #f3f6fd;
+    --app-content-container: rgba(243, 246, 253, 0.6);
+    --main-color: #1f1c2e;
+    --secondary-color: #4a4a4a;
+    --link-color: #1f1c2e;
+    --link-color-hover: #c3cff4;
+    --link-color-active: #fff;
+    --link-color-active-bg: #1f1c2e;
+    --projects-section: #fff;
+    --message-box-hover: #fafcff;
+    --message-box-border: #e9ebf0;
+    --more-list-bg: #fff;
+    --more-list-bg-hover: #f6fbff;
+    --more-list-shadow: rgba(209, 209, 209, 0.4);
+    --button-bg: #1f1c24;
+    --search-area-bg: #fff;
+    --star: #1ff1c2e;
+    --message-btn: #fff;
+    --active-color: #3512e0;
+    --border-color: rgba(0, 0, 0, 0.1);
+  }
 }
 
 .auth {
@@ -130,8 +134,17 @@ body {
   height: 1px;
   background-color: var(--border-color);
 }
+.resizer {
+  height: 100%;
+  width: 3px;
+  background-color: var(--app-container);
+  cursor: e-resize;
+}
 .sidebar-link {
   opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   &:hover,
   &.active {
     opacity: 1;

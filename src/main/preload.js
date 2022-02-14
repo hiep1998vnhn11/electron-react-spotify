@@ -20,4 +20,18 @@ contextBridge.exposeInMainWorld('electron', {
       }
     },
   },
+  store: {
+    get(val) {
+      return ipcRenderer.sendSync('electron-store-get', val);
+    },
+    set(property, val) {
+      ipcRenderer.send('electron-store-set', property, val);
+    },
+    // Other method you want to add like has(), reset(), etc.
+  },
+});
+
+contextBridge.exposeInMainWorld('darkMode', {
+  toggle: () => ipcRenderer.invoke('dark-mode:toggle'),
+  system: () => ipcRenderer.invoke('dark-mode:system'),
 });

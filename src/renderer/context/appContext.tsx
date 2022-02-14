@@ -13,6 +13,8 @@ export interface AppContextI {
   navigate: (path: string) => void;
   toastError: (message: string) => void;
   toastSuccess: (message: string) => void;
+  offlinePath: string;
+  setOfflinePath: (path: string | ((a: string) => string)) => void;
 }
 
 const AppContext = createContext<AppContextI>({} as AppContextI);
@@ -22,9 +24,10 @@ export const useAppContext = () => useContext(AppContext);
 export const AppContextProvider: React.FC = ({ children }) => {
   const notificationTimerRef = useRef<number | null>(null);
   const isNotificationError = useRef(false);
-  const [notification, setNotification] = useState<string | null>(
-    'Đã đặt hàng thành công'
+  const [offlinePath, setOfflinePath] = useState(
+    localStorage.getItem('offlinePath') || ''
   );
+  const [notification, setNotification] = useState<string | null>(null);
   const navigate = useCallback((e: string) => {
     console.log(e);
   }, []);
@@ -52,8 +55,10 @@ export const AppContextProvider: React.FC = ({ children }) => {
       navigate,
       toastSuccess,
       toastError,
+      offlinePath,
+      setOfflinePath,
     }),
-    []
+    [offlinePath]
   );
 
   const notificationShow = useMemo(
