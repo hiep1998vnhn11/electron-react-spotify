@@ -15,5 +15,5 @@ export interface AudioFile {
   size: number;
   playing: boolean;
   paused: boolean;
-  media?: HTMLAudioElement;
+  base64?: string;
 }

@@ -33,3 +33,7 @@
   -o-animation: rotating 8s linear infinite;
   animation: rotating 8s linear infinite;
 }
+
+.song-disk {
+  transition: transform 500ms linear;
+}

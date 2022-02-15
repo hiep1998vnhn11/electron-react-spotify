@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   IoPlaySkipForward,
   IoPlaySkipBack,
@@ -17,15 +23,38 @@ import {
 import { useToggle } from 'renderer/hooks';
 import thumb from 'renderer/../../assets/mtmb_thumb.jpg';
 import { useAppContext } from 'renderer/context/appContext';
+import { useFileContext } from 'renderer/context/fileContext';
 
 const BottomAppBar: React.FC = () => {
+  const rotateTimerRef = useRef<any>(null);
   const { toastSuccess } = useAppContext();
-  const [playing, togglePlaying] = useToggle(false);
+  const {
+    volume,
+    handleChangeVolume: setVolume,
+    pause,
+    playing,
+  } = useFileContext();
   const [shuffle, toggleShuffle] = useToggle(false);
   const [repeat, toggleRepeat] = useToggle(false);
-  const previousVolume = useRef('50');
-  const [volume, setVolume] = useState('50');
+  const togglePlaying = () => {};
 
+  const [rotate, setRotate] = useState(80);
+
+  const previousVolume = useRef('50');
+
+  useEffect(() => {
+    if (!pause) {
+      setRotate(0);
+      rotateTimerRef.current = setInterval(() => {
+        setRotate((rotate) => rotate + 4);
+      }, 150);
+    } else {
+      rotateTimerRef.current && clearInterval(rotateTimerRef.current);
+    }
+    return () => {
+      rotateTimerRef.current && clearInterval(rotateTimerRef.current);
+    };
+  }, [pause]);
   const handleChangeVolume = useCallback(
     (e: any) => {
       if (e.target.value) previousVolume.current = e.target.value;
@@ -34,7 +63,6 @@ const BottomAppBar: React.FC = () => {
     },
     [volume]
   );
-
   const renderVolumeIcon = useMemo(() => {
     if (volume === '0') return <IoVolumeMute size={20} />;
     if (volume === '100') return <IoVolumeHigh size={20} />;
@@ -49,20 +77,33 @@ const BottomAppBar: React.FC = () => {
       setVolume(previousVolume.current);
     }
   }, [volume]);
-  return (
-    <div className="bottom-app-bar border-l-emerald-100 flex justify-between">
-      <div className="flex w-52 items-center">
-        <div className="w-16 h-16 rounded-full overflow-hidden relative rotating">
-          <img src={thumb} className="w-16 h-16" />
+
+  const songDisk = useMemo(
+    () =>
+      playing ? (
+        <div className=" hover:scale-105 cursor-pointer">
           <div
+            className={`w-16 h-16 rounded-full overflow-hidden relative song-disk
+          ${pause ? '' : 'rotating'}`}
+          >
+            <img src={playing.base64} className="w-16 h-16" />
+            {/* <div
             className="absolute w-4 h-4 top-1/2 left-1/2 rounded-2xl -translate-x-1/2 -translate-y-1/2"
             style={{ background: 'var(--active-color)' }}
-          />
-          <div
+            />
+            <div
             className="absolute w-2 h-2 top-1/2 left-1/2 rounded-2xl -translate-x-1/2 -translate-y-1/2"
             style={{ background: 'red' }}
-          />
+          /> */}
+          </div>
         </div>
+      ) : null,
+    [pause, playing]
+  );
+  return (
+    <div className="bottom-app-bar border-l-emerald-100 flex justify-between">
+      <div className="flex w-52 items-center pl-2">
+        {songDisk}
         <IoHeartOutline
           size={20}
           className="ml-4"

@@ -21,6 +21,7 @@ const LibraryPage: FC = () => {
             onClick={() => onChangePlaying(index)}
           >
             {file.name}, {file.playing ? 'Đang chơi' : ''}
+            <img width={50} height={50} src={file.base64} alt={file.name} />
           </div>
         );
       }),

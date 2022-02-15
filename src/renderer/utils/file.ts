@@ -1,4 +1,5 @@
 import type { FileOrFolder, AudioFile } from 'types/global';
+import readAudioTags from './mediatags';
 export const getFilesFromPath = async ({
   files,
   folders,
@@ -49,35 +50,44 @@ async function getFileFromUrl(
     type: data.type || defaultType,
   });
 }
+const getSongFromUrl = async (url: string, item: FileOrFolder) => {
+  const fileUrl = await getFileFromUrl(url, item.name);
+  const result = await new Promise<AudioFile | null>((resolve) => {
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      resolve({
+        name: item.name,
+        path: item.path || '',
+        duration: Math.floor(audio.duration),
+        size: fileUrl.size / 1024 / 1024,
+        playing: false,
+        paused: false,
+      });
+    });
+    audio.onerror = () => resolve(null);
+  });
+  if (result) {
+    const tags = await readAudioTags(fileUrl);
+    const image = tags?.picture;
+    if (image) {
+      let base64String = '';
+      for (var i = 0; i < image.data.length; i++) {
+        base64String += String.fromCharCode(image.data[i]);
+      }
+      const base64 =
+        'data:' + image.format + ';base64,' + window.btoa(base64String);
+      result.base64 = base64;
+    }
+  }
+  return result;
+};
 
 const toAudioFile = async (files: FileOrFolder[]): Promise<AudioFile[]> => {
   const audioFiles: AudioFile[] = [];
   for (const item of files) {
     const url = 'file:///' + item.path;
-    const fileUrl = await getFileFromUrl(url, item.name);
-    const file = await new Promise<AudioFile>((resolve, reject) => {
-      const audio = new Audio(url);
-      audio.addEventListener('loadedmetadata', () => {
-        resolve({
-          name: item.name,
-          path: item.path || '',
-          duration: Math.floor(audio.duration),
-          size: fileUrl.size / 1024 / 1024,
-          playing: false,
-          paused: false,
-        });
-      });
-      audio.onerror = () =>
-        reject({
-          name: item.name,
-          path: item.path || '',
-          duration: 0,
-          size: fileUrl.size / 1024 / 1024,
-          playing: false,
-          paused: false,
-        });
-    });
-    audioFiles.push(file);
+    const file = await getSongFromUrl(url, item);
+    if (file) audioFiles.push(file);
   }
   return audioFiles;
 };

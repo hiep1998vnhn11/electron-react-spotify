@@ -2,8 +2,30 @@ import fs from 'fs';
 import Store from 'electron-store';
 import { ipcMain } from 'electron';
 import type { FileOrFolder } from 'types/global';
+import jsmediatags from 'jsmediatags';
 
-export default function createFileController(_: Store) {
+const getSongTags = (path: string) =>
+  new Promise((resolve) => {
+    jsmediatags.read(path, {
+      onSuccess: (tags) => {
+        console.log(tags);
+        resolve(tags);
+      },
+      onError: (error) => {
+        console.log(error);
+        resolve(null);
+      },
+    });
+  });
+export default async function createFileController(_: Store) {
+  try {
+    await getSongTags(
+      'file:///Users/hieptran/Documents/music/Last%20One%20Standing%20-%20Skylar%20Grey_%20Polo%20G%20(1).m4a'
+    );
+  } catch (e) {
+    console.log(e);
+  }
+
   ipcMain.handle('get-files-and-folders', (_, path, recursive = true) => {
     if (!path)
       return {
