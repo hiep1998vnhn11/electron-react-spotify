@@ -29,7 +29,7 @@ const LeftSidebar: React.FC = () => {
           <IoSearch size={22} />
           <span className="ml-2">Tìm kiếm</span>
         </NavLink>
-        <NavLink to="/" className="flex sidebar-link p-2 items-center">
+        <NavLink to="/library" className="flex sidebar-link p-2 items-center">
           <IoLibrary size={22} />
           <span className="ml-2">Thư viện của bạn</span>
         </NavLink>

@@ -1,16 +1,32 @@
-import { useState, FC, useCallback, useEffect } from 'react';
+import { FC, useCallback, useState } from 'react';
 import { useAppContext } from 'renderer/context/appContext';
+import { useFileContext } from 'renderer/context/fileContext';
+import { IoLogoClosedCaptioning } from 'react-icons/io5';
 
 const SettingPage: FC = () => {
-  const { offlinePath, setOfflinePath } = useAppContext();
+  const [loading, setLoading] = useState(false);
+  const { offlinePath, changeOfflinePath, getFilesAndFolders } =
+    useFileContext();
+  const { toastSuccess } = useAppContext();
 
-  useEffect(() => {
-    console.log(window.electron);
+  const handleSave = useCallback(async () => {
+    try {
+      setLoading(true);
+      getFilesAndFolders();
+      toastSuccess('Lưu thành công!');
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  console.log(offlinePath);
 
   const selectPath = useCallback(async () => {
     try {
+      const { canceled, filePaths } =
+        await window.electron.dialog.showOpenDialog({
+          properties: ['openDirectory'],
+        });
+      if (canceled || !filePaths.length) return;
+      changeOfflinePath(filePaths[0]);
     } catch (e) {
       console.log(e);
     }
@@ -32,6 +48,13 @@ const SettingPage: FC = () => {
           Đổi vị trí
         </button>
       </div>
+
+      <button
+        className="float-right mt-4 bg-red-200 hover:bg-red-300 transition px-4 py-2 text-bold rounded text-white"
+        onClick={handleSave}
+      >
+        {loading ? <IoLogoClosedCaptioning /> : 'Lưu'}
+      </button>
     </div>
   );
 };

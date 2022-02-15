@@ -29,9 +29,20 @@ contextBridge.exposeInMainWorld('electron', {
     },
     // Other method you want to add like has(), reset(), etc.
   },
+  dialog: {
+    showOpenDialog(options) {
+      return ipcRenderer.sendSync('electron-dialog-show-open-dialog', options);
+    },
+  },
 });
 
 contextBridge.exposeInMainWorld('darkMode', {
   toggle: () => ipcRenderer.invoke('dark-mode:toggle'),
   system: () => ipcRenderer.invoke('dark-mode:system'),
+});
+
+contextBridge.exposeInMainWorld('file', {
+  getFilesAndFolders: (path, recursive = true) =>
+    ipcRenderer.invoke('get-files-and-folders', path, recursive),
+  getSong: (path) => ipcRenderer.invoke('get-song', path),
 });

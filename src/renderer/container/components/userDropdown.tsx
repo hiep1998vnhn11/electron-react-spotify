@@ -33,7 +33,6 @@ const UserDropdown: React.FC = () => {
   }, []);
   const handleClickOutside = useCallback(
     (e: any) => {
-      console.log(isOpen);
       if (!isOpen) return;
       if (elRef.current && !elRef.current.contains(e.target)) {
         setIsOpen(false);

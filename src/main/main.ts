@@ -9,13 +9,21 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, nativeTheme } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  nativeTheme,
+  dialog,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
-import './store';
+import createStore from './store';
+import createFileController from './file';
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -32,6 +40,9 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
+const store = createStore();
+createFileController(store);
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
@@ -47,7 +58,8 @@ if (isDevelopment) {
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
+  // const extensions = ['REACT_DEVELOPER_TOOLS'];
+  const extensions = [] as string[];
 
   return installer
     .default(
@@ -79,6 +91,7 @@ const createWindow = async () => {
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false,
     },
   });
 
@@ -113,6 +126,11 @@ const createWindow = async () => {
 
   ipcMain.handle('dark-mode:system', () => {
     nativeTheme.themeSource = 'system';
+  });
+
+  ipcMain.on('electron-dialog-show-open-dialog', async (event, options) => {
+    const result = await dialog.showOpenDialog(mainWindow!, options);
+    event.returnValue = result;
   });
 
   // Open urls in the user's browser
