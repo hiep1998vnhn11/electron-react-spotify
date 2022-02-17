@@ -16,4 +16,10 @@ export interface AudioFile {
   playing: boolean;
   paused: boolean;
   base64?: string;
+  tags?: any;
+  title?: string;
+  artist?: string;
+  album?: string;
+  lyrics?: string;
+  year?: string;
 }

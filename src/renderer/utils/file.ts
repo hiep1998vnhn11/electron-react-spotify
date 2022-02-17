@@ -50,6 +50,61 @@ async function getFileFromUrl(
     type: data.type || defaultType,
   });
 }
+
+export const getSongFromPath = async (path: string) => {
+  try {
+    const url = 'file:///' + path;
+    const name = path.split('/').pop() || '';
+    const file = await getFileFromUrl(url, name);
+    const result = await new Promise<AudioFile | null>((resolve) => {
+      const audio = new Audio(url);
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = Math.floor(audio.duration);
+        audio.srcObject = null;
+        audio.src = '';
+        audio.remove();
+        resolve({
+          name: name.split('.')[0],
+          path: path || '',
+          duration: duration,
+          size: file.size / 1024 / 1024,
+          playing: false,
+          paused: false,
+        });
+      });
+      audio.onerror = () => {
+        audio.srcObject = null;
+        audio.src = '';
+        audio.remove();
+        resolve(null);
+      };
+    });
+    if (result) {
+      const tags = await readAudioTags(file);
+      const lyrics: any = tags?.lyrics;
+      if (lyrics) {
+        result.lyrics = typeof lyrics === 'string' ? lyrics : lyrics.lyrics;
+      }
+      result.album = tags?.album;
+      result.artist = tags?.artist;
+      result.title = tags?.title;
+      result.year = tags?.year;
+      const image = tags?.picture;
+      if (image) {
+        let base64String = '';
+        for (var i = 0; i < image.data.length; i++) {
+          base64String += String.fromCharCode(image.data[i]);
+        }
+        const base64 =
+          'data:' + image.format + ';base64,' + window.btoa(base64String);
+        result.base64 = base64;
+      }
+    }
+    return result;
+  } catch (err) {
+    return null;
+  }
+};
 const getSongFromUrl = async (url: string, item: FileOrFolder) => {
   const fileUrl = await getFileFromUrl(url, item.name);
   const result = await new Promise<AudioFile | null>((resolve) => {
@@ -68,6 +123,11 @@ const getSongFromUrl = async (url: string, item: FileOrFolder) => {
   });
   if (result) {
     const tags = await readAudioTags(fileUrl);
+    result.album = tags?.album;
+    result.artist = tags?.artist;
+    result.lyrics = tags?.lyrics;
+    result.title = tags?.title;
+    result.year = tags?.year;
     const image = tags?.picture;
     if (image) {
       let base64String = '';

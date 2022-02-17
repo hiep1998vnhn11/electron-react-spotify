@@ -59,7 +59,7 @@ const AuthContainer: React.FC = () => {
           className="resizer"
           onMouseDown={handleMouseLeftDown}
         />
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between h-12">
             <div className="flex items-center">
               <div
@@ -77,7 +77,9 @@ const AuthContainer: React.FC = () => {
             </div>
             <UserDropdown />
           </div>
-          <Outlet />
+          <div className="flex-1 overflow-auto">
+            <Outlet />
+          </div>
         </div>
         <div
           id="left-resizer"

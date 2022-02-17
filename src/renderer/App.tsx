@@ -59,7 +59,7 @@ declare global {
         files: FileOrFolder[];
         folders: FileOrFolder[];
       };
-      getSong: (path: string) => Promise<typeof Audio>;
+      getAllSongs: (path: string) => Promise<string[]>;
     };
   }
 }

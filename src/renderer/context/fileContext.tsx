@@ -5,29 +5,34 @@ import {
   useCallback,
   useState,
   useRef,
-  Ref,
+  RefObject,
+  useEffect,
 } from 'react';
 import type { AudioFile } from 'types/global';
-import {
-  getFilesFromPath,
-  filesFromWindow,
-  saveFilesToWindow,
-} from 'renderer/utils/file';
+import { filesFromWindow } from 'renderer/utils/file';
 
 export interface FileContextI {
   files: AudioFile[];
   playing: AudioFile | null;
   offlinePath: string;
   changeOfflinePath: (path: string | ((a: string) => string)) => void;
-  getFilesAndFolders: () => void;
   onChangePlaying: (index: number) => void;
   duration: number;
   durationWidth: string;
   maxDuration: number;
   handleChangeVolume: (volume: string) => void;
   volume: string;
-  playingAudio: Ref<HTMLAudioElement | null>;
+  audioRef: RefObject<HTMLAudioElement | null>;
+  playingIndex: RefObject<number>;
   pause: boolean;
+  handleChangeDuration: (e: any) => void;
+  setFiles: (files: AudioFile[]) => void;
+  shuffle: boolean;
+  toggleShuffle: () => void;
+  repeat: number;
+  setRepeat: (repeat: number) => void;
+  handleNextSong: () => void;
+  togglePlaying: () => void;
 }
 
 const FileContext = createContext<FileContextI>({} as FileContextI);
@@ -35,8 +40,8 @@ const FileContext = createContext<FileContextI>({} as FileContextI);
 export const useFileContext = () => useContext(FileContext);
 
 export const FileContextProvider: React.FC = ({ children }) => {
-  const playingAudio = useRef<HTMLAudioElement | null>(null);
-  const playingIndex = useRef(-1);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const playingIndex = useRef<number>(-1);
   const [playing, setPlaying] = useState<AudioFile | null>(null);
 
   const [offlinePath, setOfflinePath] = useState(
@@ -46,27 +51,41 @@ export const FileContextProvider: React.FC = ({ children }) => {
   const [duration, setDuration] = useState(0);
   const [maxDuration, setMaxDuration] = useState(0);
   const [pause, setPause] = useState(true);
-  const [volume, setVolume] = useState(
+  const [volume, setVolume] = useState<string>(
     window.electron.store.get('volume') || '50'
   );
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(0);
+  useEffect(() => {
+    if (!pause && playing && playingIndex.current > -1) {
+      playSong(playingIndex.current, duration);
+    }
+    const setting = window.electron.store.get('setting');
+    if (setting) {
+      try {
+        const parseSetting = JSON.parse(setting);
+        setShuffle(parseSetting.shuffle);
+        setRepeat(parseSetting.repeat);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
+    return () => {
+      window.electron.store.set('setting', JSON.stringify({ shuffle, repeat }));
+    };
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setShuffle((shuffle) => !shuffle);
+  }, []);
 
   const durationWidth = useMemo(
     () =>
-      maxDuration ? ((duration / maxDuration) * 100).toFixed(2) : '100' + '%',
+      maxDuration ? ((duration / maxDuration) * 100).toFixed(2) + '%' : '100%',
     [duration, maxDuration]
   );
   const intervalRef = useRef<any>(null);
-
-  const getFilesAndFolders = useCallback(async () => {
-    try {
-      const filesAndFolders = await window.file.getFilesAndFolders(offlinePath);
-      const filesFromPath = await getFilesFromPath(filesAndFolders);
-      saveFilesToWindow(filesFromPath);
-      setFiles(filesFromPath);
-    } catch (e) {
-      console.log(e);
-    }
-  }, [offlinePath]);
 
   const changeOfflinePath = useCallback(
     (path: string | ((a: string) => string)) => {
@@ -76,11 +95,26 @@ export const FileContextProvider: React.FC = ({ children }) => {
     [offlinePath]
   );
 
+  const playSong = useCallback(
+    (index: number, duration: number = 0) => {
+      audioRef.current!.src = 'file:///' + files[index].path;
+      audioRef.current!.volume = +volume / 100;
+      audioRef.current!.load();
+      audioRef.current!.currentTime = duration;
+      audioRef.current!.play();
+      audioRef.current!.onended = () => {
+        intervalRef.current && clearInterval(intervalRef.current);
+        handleNextSong();
+      };
+    },
+    [files, volume]
+  );
+
   const onChangePlaying = useCallback(
     (index: number) => {
-      if (playingIndex.current > -1 && playingAudio.current) {
-        const currentIndex = playingIndex.current;
-        playingAudio.current.pause();
+      const currentIndex = playingIndex.current;
+      if (playingIndex.current > -1) {
+        audioRef.current!.pause();
         setFiles((files) => [
           ...files.slice(0, currentIndex),
           { ...files[currentIndex], playing: false },
@@ -89,17 +123,18 @@ export const FileContextProvider: React.FC = ({ children }) => {
       }
       if (intervalRef.current) clearInterval(intervalRef.current);
       const file = files[index];
-      if (!file || index === playingIndex.current) {
+      if (!file) {
         playingIndex.current = -1;
         setPause(true);
       } else {
-        playingAudio.current = new Audio('file:///' + files[index].path);
-        playingAudio.current.volume = +volume / 100;
-        playingAudio.current.play();
+        playSong(index);
         setDuration(0);
-        setMaxDuration(Math.floor(file.duration));
+        const maxSongDuration = Math.floor(file.duration);
+        setMaxDuration(maxSongDuration);
         intervalRef.current = setInterval(() => {
-          setDuration((value) => value + 1);
+          setDuration((value) =>
+            value >= maxSongDuration ? maxSongDuration : value + 1
+          );
         }, 1000);
         setFiles((files) => [
           ...files.slice(0, index),
@@ -114,24 +149,71 @@ export const FileContextProvider: React.FC = ({ children }) => {
         setPause(false);
       }
     },
-    [playing, files, setFiles, setPlaying, volume, playingAudio]
+    [playSong, files, volume, setPlaying]
   );
 
+  const handleNextSong = useCallback(() => {
+    if (shuffle) {
+      const index = Math.floor(Math.random() * files.length);
+      onChangePlaying(index);
+    } else if (repeat === 1) {
+      onChangePlaying(playingIndex.current);
+    } else if (repeat === 0) {
+      if (playingIndex.current < files.length - 1) {
+        onChangePlaying(playingIndex.current + 1);
+      }
+    } else {
+      if (playingIndex.current < files.length - 1) {
+        onChangePlaying(playingIndex.current + 1);
+      } else {
+        onChangePlaying(0);
+      }
+    }
+  }, [shuffle, repeat, files, onChangePlaying]);
   const handleChangeVolume = useCallback(
     (value: string) => {
       setVolume(value);
       window.electron.store.set('volume', value);
-      if (playingIndex.current > -1 && playingAudio.current) {
-        playingAudio.current.volume = +value / 100;
+      if (playingIndex.current > -1 && audioRef.current) {
+        audioRef.current.volume = +value / 100;
       }
     },
     [playing, files]
   );
 
+  const handleChangeDuration = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { value } = e.target;
+      if (playingIndex.current > -1 && audioRef.current) {
+        audioRef.current.currentTime = +value;
+        setDuration(+value);
+      }
+    },
+    [playing]
+  );
+
+  const togglePlaying = useCallback(() => {
+    if (playingIndex.current > -1 && playing) {
+      if (pause) {
+        audioRef.current!.play();
+        intervalRef.current = setInterval(() => {
+          setDuration((value) =>
+            value >= maxDuration ? maxDuration : value + 1
+          );
+        }, 1000);
+      } else {
+        intervalRef.current && clearInterval(intervalRef.current);
+        audioRef.current!.pause();
+      }
+      setPause((value) => !value);
+    }
+  }, [pause, playing]);
+
   const fileContextValue = useMemo<FileContextI>(
     () => ({
       pause,
-      playingAudio,
+      audioRef,
+      playingIndex,
       volume,
       files,
       playing,
@@ -139,10 +221,17 @@ export const FileContextProvider: React.FC = ({ children }) => {
       duration,
       durationWidth,
       maxDuration,
+      shuffle,
+      repeat,
       changeOfflinePath,
-      getFilesAndFolders,
       onChangePlaying,
       handleChangeVolume,
+      handleChangeDuration,
+      setFiles,
+      setRepeat,
+      toggleShuffle,
+      handleNextSong,
+      togglePlaying,
     }),
     [
       offlinePath,
@@ -151,17 +240,23 @@ export const FileContextProvider: React.FC = ({ children }) => {
       duration,
       durationWidth,
       maxDuration,
-      volume.pause,
+      volume,
+      pause,
+      repeat,
+      shuffle,
       changeOfflinePath,
-      getFilesAndFolders,
       onChangePlaying,
       handleChangeVolume,
+      handleChangeDuration,
+      setFiles,
+      handleNextSong,
     ]
   );
 
   return (
     <FileContext.Provider value={fileContextValue}>
       {children}
+      <audio ref={audioRef} />
     </FileContext.Provider>
   );
 };

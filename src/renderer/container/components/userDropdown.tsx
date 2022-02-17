@@ -31,15 +31,11 @@ const UserDropdown: React.FC = () => {
   const toggleOpen = useCallback(() => {
     setIsOpen((value) => !value);
   }, []);
-  const handleClickOutside = useCallback(
-    (e: any) => {
-      if (!isOpen) return;
-      if (elRef.current && !elRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    },
-    [isOpen]
-  );
+  const handleClickOutside = (e: any) => {
+    if (elRef.current && !elRef.current.contains(e.target)) {
+      setIsOpen(false);
+    }
+  };
   useEffect(() => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
@@ -69,6 +65,7 @@ const UserDropdown: React.FC = () => {
             <NavLink
               className="opacity-80 hover:opacity-100 p-2"
               to={option.url}
+              onClick={toggleOpen}
               key={option.url}
             >
               {option.label}

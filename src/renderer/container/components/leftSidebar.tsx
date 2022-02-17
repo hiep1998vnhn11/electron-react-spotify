@@ -19,7 +19,7 @@ const LeftSidebar: React.FC = () => {
   }, [createPlaylist]);
 
   return (
-    <div className="left-sidebar p-3" id="left-sidebar">
+    <div className="left-sidebar p-3 overflow-auto" id="left-sidebar">
       <div>
         <NavLink to="/" className="flex sidebar-link p-2 items-center">
           <IoHome size={22} />

@@ -40,15 +40,34 @@ export default async function createFileController(_: Store) {
     );
   });
 
-  ipcMain.handle('get-song', (_, path) => {
-    if (!path) return null;
-    try {
-      return new Audio(path);
-    } catch (e) {
-      console.log(e);
-      return null;
-    }
+  ipcMain.handle('get-all-songs', (_, path) => {
+    if (!path) return [];
+    return getAllSongs([], path);
   });
+}
+
+function getExt(path: string) {
+  return path.split('.').pop() || '';
+}
+
+function getAllSongs(files: string[], path: string) {
+  try {
+    const exts = ['mp3', 'm4a', 'flac', 'wav'];
+    const dirs = fs.readdirSync(path, 'utf8');
+    dirs.forEach((dir) => {
+      if (exts.includes(getExt(dir))) {
+        const stat = fs.statSync(`${path}/${dir}`);
+        if (stat.isDirectory()) {
+          getAllSongs(files, `${path}/${dir}`);
+        } else {
+          files.push(`${path}/${dir}`);
+        }
+      }
+    });
+    return files;
+  } catch (err) {
+    return [];
+  }
 }
 
 function getFileNames(path: string, recursive = true) {

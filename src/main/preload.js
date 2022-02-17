@@ -44,5 +44,5 @@ contextBridge.exposeInMainWorld('darkMode', {
 contextBridge.exposeInMainWorld('file', {
   getFilesAndFolders: (path, recursive = true) =>
     ipcRenderer.invoke('get-files-and-folders', path, recursive),
-  getSong: (path) => ipcRenderer.invoke('get-song', path),
+  getAllSongs: (path) => ipcRenderer.invoke('get-all-songs', path),
 });
